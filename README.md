@@ -8,6 +8,7 @@ Aplicación macOS para transcribir audios usando **OpenAI Whisper**.
 - **Barra de progreso** visual con estimación de tiempo
 - **Notificaciones nativas** de macOS
 - **Auto-organización:** Los audios procesados se mueven a `historical/`
+- **Detección automática de idioma** por archivo
 - **App nativa** para el Dock de macOS
 
 ## 🚀 Instalación
@@ -40,7 +41,13 @@ brew install ffmpeg
 ```bash
 # Meter audios en la carpeta audio/
 ./venv/bin/python transcribe.py
+
+# Forzar idioma si lo sabes de antemano
+./venv/bin/python transcribe.py --language es
+./venv/bin/python transcribe.py --language en
 ```
+
+Por defecto, Whisper detecta automáticamente si cada archivo está en español o inglés y transcribe en el idioma original. No traduce salvo que se implemente explícitamente un modo de traducción.
 
 ## 📁 Estructura
 

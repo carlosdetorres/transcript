@@ -5,7 +5,7 @@ Transcribes audio files using OpenAI Whisper.
 Sends macOS notifications when done.
 """
 
-import os
+import argparse
 import shutil
 import subprocess
 import sys
@@ -29,6 +29,10 @@ AUDIO_EXTENSIONS = {".wav", ".mp3", ".m4a", ".flac", ".ogg", ".webm", ".opus"}
 #   05:12 audio → 02:03 proceso = 0.39x
 # Promedio conservador: 0.35x
 PROCESS_RATIO = 0.35
+LANGUAGE_NAMES = {
+    "es": "Español",
+    "en": "Inglés",
+}
 
 
 def notify(title: str, message: str, sound: bool = True):
@@ -91,7 +95,23 @@ def show_progress_bar(stop_event: threading.Event, file_name: str, estimated_sec
     return idx
 
 
+def parse_args():
+    """Parse CLI arguments"""
+    parser = argparse.ArgumentParser(
+        description="Transcribe audios con Whisper manteniendo el idioma original por defecto."
+    )
+    parser.add_argument(
+        "--language",
+        choices=["auto", "es", "en"],
+        default="auto",
+        help="Idioma a forzar. Usa 'auto' para detección automática por archivo (por defecto).",
+    )
+    return parser.parse_args()
+
+
 def main():
+    args = parse_args()
+
     # Suppress FP16 warning
     import warnings
     warnings.filterwarnings("ignore", message="FP16 is not supported on CPU")
@@ -117,6 +137,11 @@ def main():
     print("━" * 50)
     print("🎙️  TRANSCRIPTOR DE AUDIO")
     print("━" * 50)
+    if args.language == "auto":
+        print("\n🌐 Idioma: detección automática")
+    else:
+        language_label = LANGUAGE_NAMES.get(args.language, args.language)
+        print(f"\n🌐 Idioma forzado: {language_label}")
     print(f"\n📁 {len(audio_files)} archivo(s) encontrados:\n")
     
     for f in audio_files:
@@ -154,7 +179,11 @@ def main():
         progress_thread.start()
 
         # Transcribe
-        result = model.transcribe(str(audio_file), language="es")
+        transcribe_kwargs = {}
+        if args.language != "auto":
+            transcribe_kwargs["language"] = args.language
+
+        result = model.transcribe(str(audio_file), **transcribe_kwargs)
 
         stop_event.set()
         progress_thread.join()
@@ -166,9 +195,13 @@ def main():
         output_file = OUTPUT_DIR / f"{audio_file.stem}.txt"
         text = result["text"].strip()
         output_file.write_text(text)
-        
+
         word_count = len(text.split())
         print(f"   💾 {output_file.name} ({word_count} palabras)")
+        detected_language = result.get("language")
+        if detected_language:
+            language_label = LANGUAGE_NAMES.get(detected_language, detected_language.upper())
+            print(f"   🌐 Idioma detectado: {language_label}")
 
         # Move to historical
         historical_file = HISTORICAL_DIR / audio_file.name
