@@ -1,4 +1,5 @@
 openai-whisper==20231117
-
-
-
+mlx-whisper>=0.4.3
+senko @ git+https://github.com/narcotic-sh/senko.git
+torch==2.9.1
+torchaudio==2.9.1

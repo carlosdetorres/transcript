@@ -4,21 +4,27 @@
 SCRIPT_DIR="$(cd "$(dirname "$0")/../../.." && pwd)"
 cd "$SCRIPT_DIR"
 
-# Create audio folder if needed
-mkdir -p audio
+mkdir -p audio transcriptions
 
-# Open audio folder in Finder
 open audio
 
-# Show dialog to user
-osascript -e 'display dialog "Arrastra tus archivos de audio a la carpeta que se ha abierto.
+DIALOG_RESULT=$(osascript -e 'display dialog "Arrastra tus archivos de audio a la carpeta que se ha abierto.
 
-Cuando estés listo, pulsa OK para iniciar la transcripción." with title "🎙️ Transcriptor" buttons {"Cancelar", "OK"} default button "OK" with icon note' 2>/dev/null
+Elige el idioma del audio y pulsa el botón para iniciar la transcripción." with title "🎙️ Transcriptor" buttons {"Cancelar", "Inglés", "Español"} default button "Español" with icon note' 2>/dev/null)
 
-if [ $? -eq 0 ]; then
-    # Run transcription in a new Terminal window
-    osascript -e "tell application \"Terminal\"
-        activate
-        do script \"cd '$SCRIPT_DIR' && ./venv/bin/python transcribe.py; echo ''; echo 'Pulsa cualquier tecla para cerrar...'; read -n 1\"
-    end tell"
+if [ $? -ne 0 ]; then
+    exit 0
 fi
+
+if [[ "$DIALOG_RESULT" == *"Inglés"* ]]; then
+    LANGUAGE="en"
+elif [[ "$DIALOG_RESULT" == *"Español"* ]]; then
+    LANGUAGE="es"
+else
+    exit 0
+fi
+
+osascript -e "tell application \"Terminal\"
+    activate
+    do script \"cd '$SCRIPT_DIR' && ./venv/bin/python transcribe.py --language $LANGUAGE; echo ''; echo 'Pulsa cualquier tecla para cerrar...'; read -n 1\"
+end tell"
